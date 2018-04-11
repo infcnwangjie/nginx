@@ -1,0 +1,88 @@
+yum install nginx
+
+如果找不到nginx,使用下面命令：
+ps -ef|grep nginx
+
+一般nginx配置文件会在/etc/nginx/nginx下面：
+vi /etc/nginx/nginx.conf
+
+会看到：
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /var/run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+}
+
+
+看到include /etc/nginx/conf.d/*.conf然后我们找到默认配置文件：
+vi /etc/nginx/conf.d/default.conf
+
+#
+# The default server
+#
+
+server {
+    listen       80 default_server;
+    #listen       [::]:80 default_server;
+    server_name  _;
+    root         /usr/share/nginx/html;
+
+    # Load configuration files for the default server block.
+    include /etc/nginx/default.d/*.conf;
+
+    location / {
+        proxy_pass http://172.17.36.8:8081;
+    }
+    #图片服务器1 大大提速
+    location /static/images/{
+        root /root/FlaskDemo/app/static/images;
+        autoindex on;
+     }
+
+   #图片服务器2 大大提速
+    location /static/img/{
+        root /root/FlaskDemo/app/static/img;
+        autoindex on;
+     }
+    error_page 404 /404.html;
+        location = /40x.html {
+    }
+
+    error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+    }
+
+}
